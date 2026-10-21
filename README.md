@@ -16,5 +16,8 @@ Planti is a browser-based plant tracking application designed to help beginner p
 - CSS
 - JavaScript
 
+## Members:
+Manset, Shayne Aliyah M.
+
 
 
