@@ -1,0 +1,388 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planti - The Plant Tracker Management System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="toast" role="status" aria-live="polite"></div>
+
+        <!-- LOGIN AND SIGNUP -->
+        <section id="auth" class="auth">
+            <div class="intro">
+            <a class="logo" href="#">✿ planti<span>.</span></a>
+
+        <div>
+            <small>A SOFTER WAY TO GROW</small>
+            <h1>A little care<br>goes a <em>long way.</em></h1>
+            <p>
+            Track your plants' needs, notice their growth, and
+            make plant care feel simple.
+            </p>
+      </div>
+
+      <small class="foot"></small>
+    </div>
+
+    <div class="auth-side">
+      <a class="logo mobile-logo" href="#">✿ planti<span>.</span></a>
+
+      <div class="auth-box">
+        <div class="tabs">
+          <button id="loginTab" class="active" type="button">Log in</button>
+          <button id="signupTab" type="button">Create account</button>
+        </div>
+
+        <div id="loginWrap">
+          <small>WELCOME BACK</small>
+          <h2>Good to see you.</h2>
+          <p>Your plants have been waiting for you.</p>
+
+          <form id="loginForm">
+            <label>
+              Email address
+              <input id="loginEmail" type="email" required
+                placeholder="you@example.com">
+            </label>
+
+            <label>
+              Password
+              <input id="loginPassword" type="password"
+                required minlength="4" placeholder="Enter your password">
+            </label>
+
+            <button class="primary" type="submit">Enter my garden ↗</button>
+          </form>
+
+          <p class="switch">
+            New to Planti?
+            <button id="goSignup" type="button">Create an account</button>
+          </p>
+        </div>
+
+        <div id="signupWrap" hidden>
+          <small>START SOMETHING GREEN</small>
+          <h2>Make room to grow.</h2>
+          <p>Create your own little plant corner.</p>
+
+          <form id="signupForm">
+            <label>
+              Your name
+              <input id="signupName" required
+                placeholder="Create your username">
+            </label>
+
+            <label>
+              Email address
+              <input id="signupEmail" type="email" required
+                placeholder="you@example.com">
+            </label>
+
+            <label>
+              Password
+              <input id="signupPassword" type="password"
+                minlength="4" required placeholder="At least 4 characters">
+            </label>
+
+            <button class="primary" type="submit">Create my garden ↗</button>
+          </form>
+
+          <p class="switch">
+            Already have an account?
+            <button id="goLogin" type="button">Log in</button>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN CONTENT -->
+  <div id="app" hidden>
+    <aside class="sidebar">
+      <a class="logo" href="#" id="homeLink">✿ planti<span>.</span></a>
+
+      <small class="nav-label">YOUR SPACE</small>
+      <button class="nav active" data-view="dashboard" type="button">
+        ⌂ &nbsp; Overview
+      </button>
+      <button class="nav" data-view="plants" type="button">
+        ♧ &nbsp; My plants <b id="navCount">0</b>
+      </button>
+
+      <div class="side-bottom">
+        <div class="tip">
+          ☼ <span><b>A gentle reminder</b><br>
+          Small routines help your plants thrive.</span>
+        </div>
+
+        <div class="profile">
+          <div id="avatar">P</div>
+          <span>
+            <b id="profileName">Plant person</b>
+            <small id="profileEmail"></small>
+          </span>
+        </div>
+
+        <button id="logout" class="logout" type="button">↪ Log out</button>
+      </div>
+    </aside>
+
+    <main>
+      <header>
+        <span class="crumb">
+          YOUR GARDEN &nbsp; / &nbsp; <b id="crumbTitle">Overview</b>
+        </span>
+        <span id="dateChip"></span>
+        <button id="quickAdd" class="plus" aria-label="Add plant"
+          type="button">＋</button>
+      </header>
+
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="page">
+        <div class="welcome">
+          <div>
+            <small id="welcomeDate">YOUR LITTLE CORNER</small>
+            <h1>Let's help your garden grow<span>.</span></h1>
+            <p>A little attention today can make a big difference tomorrow.</p>
+          </div>
+          <button class="primary add" type="button">＋ Add a plant</button>
+        </div>
+
+        <div class="stats">
+          <article>
+            <small>IN YOUR GARDEN</small>
+            <strong id="total">0</strong>
+            <p>plants in your collection</p>
+            <i>✿</i>
+          </article>
+
+          <article>
+            <small>NEEDS A LOOK</small>
+            <strong id="attention">0</strong>
+            <p>plants that may need care</p>
+            <i>❧</i>
+          </article>
+
+          <article>
+            <small>LOOKING GOOD</small>
+            <strong id="healthy">0</strong>
+            <p>plants marked healthy</p>
+            <i>✳</i>
+          </article>
+        </div>
+
+        <div class="columns">
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <small>THE GREEN CREW</small>
+                <h2>Your plants</h2>
+              </div>
+              <button class="link" data-view="plants" type="button">
+                See all →
+              </button>
+            </div>
+
+            <div id="recentPlants" class="plant-grid"></div>
+
+            <div id="dashEmpty" class="empty">
+              <div>♧</div>
+              <h3>Your garden starts here</h3>
+              <p>Add your first plant and keep its little world organized.</p>
+              <button class="primary add" type="button">
+                ＋ Add your first plant
+              </button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <div>
+                <small>RECENT NOTES</small>
+                <h2>Care journal</h2>
+              </div>
+              <span>✎</span>
+            </div>
+
+            <div id="activities"></div>
+
+            <div id="activityEmpty" class="empty-note">
+              ☘
+              <p>Your care notes will show up here as you update your plants.</p>
+            </div>
+
+            <div class="care-tip">
+              <b>☼ Plant-care thought</b>
+              <p>
+                Check the soil before watering. Most plants prefer a little
+                pause over soggy roots.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <div class="banner">
+          ✿
+          <div>
+            <small>A NOTE TO YOURSELF</small>
+            <h3>Growth doesn't have to happen all at once.</h3>
+            <p>Keep showing up for your plants, one small thing at a time.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- MY PLANTS -->
+      <section id="plants" class="page" hidden>
+        <div class="welcome">
+          <div>
+            <small>EVERY LEAF HAS A STORY</small>
+            <h1>My plants<span>.</span></h1>
+            <p>Your collection, your pace. Keep all your leafy friends close.</p>
+          </div>
+          <button class="primary add" type="button">＋ Add a plant</button>
+        </div>
+
+        <div class="filters">
+          <input id="search" type="search"
+            placeholder="⌕  Search by plant name or type…">
+
+          <select id="healthFilter">
+            <option value="all">All health statuses</option>
+            <option>Healthy</option>
+            <option>Needs Water</option>
+            <option>Needs Attention</option>
+          </select>
+
+          <select id="typeFilter">
+            <option value="all">All plant types</option>
+            <option>Indoor</option>
+            <option>Outdoor</option>
+            <option>Herb</option>
+            <option>Flower</option>
+            <option>Succulent</option>
+            <option>Other</option>
+          </select>
+        </div>
+
+        <div class="count" id="count">0 plants</div>
+        <div id="allPlants" class="plant-grid all-grid"></div>
+
+        <div id="plantsEmpty" class="empty">
+          <div>♧</div>
+          <h3>No plants found just yet</h3>
+          <p>Try another search, or add a new leafy friend.</p>
+          <button class="primary add" type="button">＋ Add a plant</button>
+        </div>
+      </section>
+
+      <footer>
+        ✿ planti.
+        <span>Made for growing things, and growing with them.</span>
+      </footer>
+    </main>
+  </div>
+
+  <!-- ADD / EDIT PLANT MODAL -->
+  <div id="plantModal" class="backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true"
+      aria-labelledby="modalTitle">
+
+      <div class="modal-head">
+        <div>
+          <small>A NEW LITTLE FRIEND</small>
+          <h2 id="modalTitle">Add a plant</h2>
+        </div>
+        <button id="closeModal" class="close" type="button"
+          aria-label="Close">×</button>
+      </div>
+
+      <form id="plantForm">
+        <input id="plantId" type="hidden">
+
+        <div class="two">
+          <label>
+            Plant name *
+            <input id="plantName" required maxlength="60"
+              placeholder="e.g. Sunny">
+          </label>
+
+          <label>
+            Plant type
+            <select id="plantType">
+              <option>Indoor</option>
+              <option>Outdoor</option>
+              <option>Herb</option>
+              <option>Flower</option>
+              <option>Succulent</option>
+              <option>Other</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="two">
+          <label>
+            Species / variety
+            <input id="plantSpecies" placeholder="e.g. Monstera deliciosa">
+          </label>
+
+          <label>
+            Health status
+            <select id="plantHealth">
+              <option>Healthy</option>
+              <option>Needs Water</option>
+              <option>Needs Attention</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="two">
+          <label>
+            Sunlight
+            <select id="plantSunlight">
+              <option>Indirect light</option>
+              <option>Bright light</option>
+              <option>Low light</option>
+              <option>Direct sunlight</option>
+              <option>Shade</option>
+            </select>
+          </label>
+
+          <label>
+            Last watered
+            <input id="plantWatered" type="date">
+          </label>
+        </div>
+
+        <label>
+          Care notes
+          <textarea id="plantNotes" rows="3"
+            placeholder="Anything worth remembering…"></textarea>
+        </label>
+
+        <p class="muted">* Required field</p>
+
+        <div class="actions">
+          <button type="button" id="cancelModal" class="secondary">
+            Cancel
+          </button>
+          <button class="primary" type="submit">Save plant ↗</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <!-- PLANT DETAILS MODAL -->
+  <div id="detailModal" class="backdrop" hidden>
+    <section class="modal detail" role="dialog" aria-modal="true">
+      <button id="closeDetail" class="close" type="button"
+        aria-label="Close">×</button>
+      <div id="detailContent"></div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
