@@ -44,34 +44,6 @@ The application allows users to create accounts, manage plant records, track bas
 - JSON files
 - Node.js File System (fs) module
 
-## Installation and Setup
-
-### Prerequisites
-- Node.js installed on your computer.
-- npm (included with Node.js).
-
-### Steps
-
-1. Clone or download this repository.
-2. Open the project folder in your terminal.
-3. Install the required dependencies:
-
-   ```bash
-   npm install
-   ```
-
-4. Start the Express server:
-
-   ```bash
-   node server.js
-   ```
-
-5. Open your browser and visit:
-
-   ```text
-   http://localhost:3000
-   ```
-
 ## Backend API Routes
 
 | Method | Endpoint | Description |
