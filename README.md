@@ -32,8 +32,8 @@ The application allows users to create accounts, manage plant records, track bas
 ## Technology Stack
 
 **Frontend**
-- HTML5
-- CSS3
+- HTML
+- CSS
 - JavaScript
 
 **Backend**
