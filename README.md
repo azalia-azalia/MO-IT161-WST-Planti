@@ -44,22 +44,6 @@ The application allows users to create accounts, manage plant records, track bas
 - JSON files
 - Node.js File System (fs) module
 
-## Project Structure
-
-```text
-Planti/
-├── data/
-│   ├── plants.json
-│   └── users.json
-├── index.html
-├── styles.css
-├── app.js
-├── server.js
-├── package.json
-├── package-lock.json
-└── .gitignore
-```
-
 ## Installation and Setup
 
 ### Prerequisites
