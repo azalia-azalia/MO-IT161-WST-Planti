@@ -362,6 +362,14 @@ textarea:focus {
 main {
   margin-left: 235px;
   padding: 0 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Keep the header at the top of the content area */
+main > header {
+  flex-shrink: 0;
 }
 
 header {
@@ -404,6 +412,7 @@ header {
 
 .page {
   padding-top: 30px;
+  flex: 1;
 }
 
 .welcome {
@@ -778,6 +787,7 @@ header {
 /* FOOTER */
 
 footer {
+  margin-top: auto;
   padding: 20px 0 25px;
   color: #426b4b;
   font-weight: bold;

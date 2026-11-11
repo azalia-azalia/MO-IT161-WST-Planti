@@ -1,4 +1,3 @@
-
 (() => {
   const $ = id => document.getElementById(id);
 
@@ -9,6 +8,7 @@
 
   let user = null;
   let toastTimer;
+  let serverPlants = [];
 
   const read = (key, fallback) => {
     try {
@@ -20,8 +20,18 @@
   };
 
   const write = (key, value) => {
+  try {
     localStorage.setItem(key, JSON.stringify(value));
-  };
+    return true;
+  } catch (error) {
+    console.error("Unable to save data:", error);
+    toast(
+      "Your changes could not be saved. Check your browser storage.",
+      true
+    );
+    return false;
+  }
+};
 
   const uid = () =>
     Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -38,7 +48,17 @@
   const email = () => user.email.toLowerCase();
 
   const allPlants = () =>
-    read(plantsKey, []).filter(plant => plant.owner === email());
+    serverPlants.filter(plant => plant.owner === email());
+
+  async function loadPlants() {
+    const response = await fetch('/api/plants');
+
+    if (!response.ok) {
+        throw new Error('Unable to retrieve plants.');
+    }
+
+    serverPlants = await response.json();
+  }
 
   const savePlants = plants => {
     const otherUsersPlants = read(plantsKey, [])
@@ -99,7 +119,7 @@
     authMode('login');
   }
 
-  function showApp() {
+  async function showApp() {
     $('auth').hidden = true;
     $('app').hidden = false;
 
@@ -108,26 +128,33 @@
     $('avatar').textContent = user.name.trim()[0].toUpperCase();
 
     $('dateChip').textContent = new Date().toLocaleDateString(
-      undefined,
-      {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
-      }
+        undefined,
+        {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        }
     );
 
     $('welcomeDate').textContent = new Date().toLocaleDateString(
-      undefined,
-      {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric'
-      }
+        undefined,
+        {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric'
+        }
     ).toUpperCase();
 
     navigate('dashboard');
-    render();
-  }
+
+    try {
+        await loadPlants();
+        render();
+    } catch (error) {
+        console.error(error);
+        toast('Unable to load your plants. Please try again.', true);
+    }
+}
 
   // NAVIGATION
 
@@ -309,45 +336,61 @@
 
   // SEARCH AND FILTER PLANTS
 
-  function renderPlants() {
+  async function renderPlants() {
     if (!user) return;
 
-    const query = $('search').value.trim().toLowerCase();
+    const query = $('search').value.trim();
     const health = $('healthFilter').value;
     const type = $('typeFilter').value;
 
-    const all = allPlants();
+    // Prepare the search and filter parameters
+    const params = new URLSearchParams();
 
-    const filteredPlants = all.filter(plant => {
-      const searchableText = [
-        plant.name,
-        plant.species,
-        plant.type,
-        plant.notes
-      ].join(' ').toLowerCase();
+    params.set('owner', email());
 
-      const matchesSearch = searchableText.includes(query);
+    if (query) {
+      params.set('search', query);
+    }
 
-      const matchesHealth =
-        health === 'all' || plant.health === health;
+    if (health !== 'all') {
+      params.set('health', health);
+    }
 
-      const matchesType =
-        type === 'all' || plant.type === type;
+    if (type !== 'all') {
+      params.set('type', type);
+    }
 
-      return matchesSearch && matchesHealth && matchesType;
-    });
+    try {
+      // Send the search request to the backend
+      const response = await fetch(
+        `/api/plants?${params.toString()}`
+      );
 
-    $('allPlants').innerHTML = filteredPlants
-      .map(card)
-      .join('');
+      const filteredPlants = await response.json();
 
-    $('allPlants').hidden = filteredPlants.length === 0;
-    $('plantsEmpty').hidden = filteredPlants.length > 0;
+      if (!response.ok) {
+        throw new Error(
+          filteredPlants.message || 'Unable to search plants.'
+        );
+      }
 
-    $('count').textContent =
-      `${filteredPlants.length} ${
-        filteredPlants.length === 1 ? 'plant' : 'plants'
-      }${filteredPlants.length !== all.length ? ' found' : ''}`;
+      // Display the matching plants
+      $('allPlants').innerHTML = filteredPlants
+        .map(card)
+        .join('');
+
+      $('allPlants').hidden = filteredPlants.length === 0;
+      $('plantsEmpty').hidden = filteredPlants.length > 0;
+
+      $('count').textContent =
+        `${filteredPlants.length} ${
+          filteredPlants.length === 1 ? 'plant' : 'plants'
+        }${query || health !== 'all' || type !== 'all' ? ' found' : ''}`;
+
+    } catch (error) {
+      console.error(error);
+      toast(error.message || 'Unable to filter plants.', true);
+    }
   }
 
   // OPEN THE ADD OR EDIT FORM
@@ -382,61 +425,98 @@
 
   // SAVE A NEW PLANT OR UPDATE AN EXISTING ONE
 
-  function savePlant(event) {
+  async function savePlant(event) {
     event.preventDefault();
 
     const name = $('plantName').value.trim();
 
     if (!name) {
-      toast('Please give your plant a name.', true);
-      return;
+        toast('Please give your plant a name.', true);
+        return;
     }
 
-    const plants = allPlants();
     const id = $('plantId').value;
-
-    const existingPlant = plants.find(plant => plant.id === id);
+    const existingPlant = allPlants().find(plant => plant.id === id);
 
     const plant = {
-      id: id || uid(),
-      owner: email(),
-      name,
-      type: $('plantType').value,
-      species: $('plantSpecies').value.trim(),
-      health: $('plantHealth').value,
-      sunlight: $('plantSunlight').value,
-      lastWatered: $('plantWatered').value,
-      notes: $('plantNotes').value.trim(),
-
-      createdAt:
-        existingPlant?.createdAt || new Date().toISOString(),
-
-      updatedAt: new Date().toISOString()
+        owner: email(),
+        name,
+        type: $('plantType').value,
+        species: $('plantSpecies').value.trim(),
+        health: $('plantHealth').value,
+        sunlight: $('plantSunlight').value,
+        lastWatered: $('plantWatered').value,
+        notes: $('plantNotes').value.trim(),
+        createdAt: existingPlant?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
     };
 
-    const updatedPlants = existingPlant
-      ? plants.map(item => item.id === id ? plant : item)
-      : [plant, ...plants];
+    // ADD A NEW PLANT THROUGH THE BACKEND
+    if (!existingPlant) {
+        try {
+            const response = await fetch('/api/plants', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(plant)
+            });
 
-    savePlants(updatedPlants);
+            const result = await response.json();
 
-    note(
-      existingPlant
-        ? `Updated ${plant.name}'s plant profile.`
-        : `Added ${plant.name} to your garden.`,
-      existingPlant ? '✎' : '✿'
-    );
+            if (!response.ok) {
+                throw new Error(result.message || 'Unable to add plant.');
+            }
 
-    closeForm();
-    render();
+            serverPlants.unshift(result.plant);
 
-    toast(
-      existingPlant
-        ? 'Plant details updated.'
-        : 'A new leafy friend was added!'
-    );
+            note(`Added ${plant.name} to your garden.`, '✿');
+
+            closeForm();
+            render();
+
+            toast('A new leafy friend was added!');
+
+        } catch (error) {
+            console.error(error);
+            toast(error.message || 'Unable to save your plant.', true);
+        }
+
+        return;
+    }
+
+    // UPDATE AN EXISTING PLANT THROUGH THE BACKEND
+    try {
+        const response = await fetch(`/api/plants/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(plant)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Unable to update plant.');
+        }
+
+        serverPlants = serverPlants.map(item =>
+            item.id === id ? result.plant : item
+        );
+
+        note(`Updated ${plant.name}'s plant profile.`, '✎');
+
+        closeForm();
+        render();
+
+        toast('Plant details updated.');
+
+    } catch (error) {
+        console.error(error);
+        toast(error.message || 'Unable to update your plant.', true);
+    }
   }
-
   // VIEW PLANT DETAILS
 
   function details(id) {
@@ -551,7 +631,7 @@
 
   // HANDLE PLANT ACTIONS
 
-  function action(button) {
+  async function action(button) {
     const { action: actionName, id } = button.dataset;
 
     if (actionName === 'details') {
@@ -572,53 +652,96 @@
     }
 
     if (actionName === 'delete') {
-      const plant = allPlants().find(item => item.id === id);
+    const plant = allPlants().find(item => item.id === id);
 
-      if (
+    if (
         plant &&
         confirm(
-          `Delete ${plant.name} from your garden? This cannot be undone.`
+            `Delete ${plant.name} from your garden? This cannot be undone.`
         )
-      ) {
-        savePlants(
-          allPlants().filter(item => item.id !== id)
-        );
+    ) {
+        try {
+            const response = await fetch(`/api/plants/${id}`, {
+                method: 'DELETE'
+            });
 
-        note(`Removed ${plant.name} from your garden.`, '−');
+            const result = await response.json();
 
-        closeDetails();
-        render();
-        toast(`${plant.name} was removed.`);
+            if (!response.ok) {
+                throw new Error(result.message || 'Unable to delete plant.');
+            }
+
+            serverPlants = serverPlants.filter(
+                item => item.id !== id
+            );
+
+            note(`Removed ${plant.name} from your garden.`, '−');
+
+            closeDetails();
+            render();
+
+            toast(`${plant.name} was removed.`);
+
+        } catch (error) {
+            console.error(error);
+            toast(error.message || 'Unable to delete your plant.', true);
+        }
+    }
+
+    return;
+  }
+
+    if (actionName === 'water') {
+    const plant = allPlants().find(item => item.id === id);
+
+    if (plant) {
+        const updatedPlant = {
+            ...plant,
+            health: 'Healthy',
+            lastWatered: [
+                new Date().getFullYear(),
+                String(new Date().getMonth() + 1).padStart(2, '0'),
+                String(new Date().getDate()).padStart(2, '0')
+            ].join('-'),
+        };
+
+        try {
+            const response = await fetch(`/api/plants/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedPlant)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Unable to update plant.');
+            }
+
+            serverPlants = serverPlants.map(item =>
+                item.id === id ? result.plant : item
+            );
+
+            note(
+                `Watered ${plant.name} and marked it healthy.`,
+                '☼'
+            );
+
+            closeDetails();
+            render();
+            details(id);
+
+            toast(`${plant.name} marked as watered.`);
+
+          } catch (error) {
+              console.error(error);
+              toast(error.message || 'Unable to mark plant as watered.', true);
+          }
       }
 
       return;
-    }
-
-    if (actionName === 'water') {
-      const plants = allPlants();
-      const plant = plants.find(item => item.id === id);
-
-      if (plant) {
-        plant.lastWatered = new Date()
-          .toISOString()
-          .slice(0, 10);
-
-        plant.health = 'Healthy';
-        plant.updatedAt = new Date().toISOString();
-
-        savePlants(plants);
-
-        note(
-          `Watered ${plant.name} and marked it healthy.`,
-          '☼'
-        );
-
-        closeDetails();
-        render();
-        details(id);
-
-        toast(`${plant.name} marked as watered.`);
-      }
     }
   }
 
@@ -631,78 +754,109 @@
 
   // LOG IN
 
-  $('loginForm').onsubmit = event => {
-    event.preventDefault();
+  $('loginForm').onsubmit = async event => {
+      event.preventDefault();
 
-    const enteredEmail = $('loginEmail')
-      .value.trim().toLowerCase();
+      const enteredEmail = $('loginEmail').value.trim().toLowerCase();
+      const enteredPassword = $('loginPassword').value;
 
-    const enteredPassword = $('loginPassword').value;
+      try {
+          const response = await fetch('/api/login', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  email: enteredEmail,
+                  password: enteredPassword
+              })
+          });
 
-    const account = read(usersKey, []).find(item =>
-      item.email === enteredEmail &&
-      item.password === enteredPassword
-    );
+          const result = await response.json();
 
-    if (!account) {
-      toast("That email and password don't match an account.", true);
-      return;
-    }
+          if (!response.ok) {
+              throw new Error(result.message || 'Unable to log in.');
+          }
 
-    user = account;
+          user = result.user;
 
-    write(sessionKey, {
-      email: user.email
-    });
+          const users = read(usersKey, []).filter(
+              item => item.email !== user.email
+          );
 
-    showApp();
+          users.push(user);
+          write(usersKey, users);
 
-    toast(`Welcome back, ${user.name.split(' ')[0]}!`);
+          write(sessionKey, {
+              email: user.email
+          });
+
+          await showApp();
+
+          toast(`Welcome back, ${user.name.split(' ')[0]}!`);
+
+      } catch (error) {
+          console.error(error);
+          toast(error.message || 'Unable to log in.', true);
+      }
   };
 
   // CREATE ACCOUNT
 
-  $('signupForm').onsubmit = event => {
-    event.preventDefault();
+  $('signupForm').onsubmit = async event => {
+      event.preventDefault();
 
-    const name = $('signupName').value.trim();
+      const name = $('signupName').value.trim();
+      const enteredEmail = $('signupEmail').value.trim().toLowerCase();
+      const password = $('signupPassword').value;
 
-    const enteredEmail = $('signupEmail')
-      .value.trim().toLowerCase();
+      if (name.length < 2) {
+          toast('Please enter your name.', true);
+          return;
+      }
 
-    const password = $('signupPassword').value;
+      try {
+          const response = await fetch('/api/signup', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  name,
+                  email: enteredEmail,
+                  password
+              })
+          });
 
-    const users = read(usersKey, []);
+          const result = await response.json();
 
-    if (name.length < 2) {
-      toast('Please enter your name.', true);
-      return;
-    }
+          if (!response.ok) {
+              throw new Error(result.message || 'Unable to create account.');
+          }
 
-    if (users.some(item => item.email === enteredEmail)) {
-      toast('An account with that email already exists.', true);
-      return;
-    }
+          user = result.user;
 
-    user = {
-      id: uid(),
-      name,
-      email: enteredEmail,
-      password,
-      createdAt: new Date().toISOString()
-    };
+          const users = read(usersKey, []).filter(
+              item => item.email !== user.email
+          );
 
-    users.push(user);
+          users.push(user);
+          write(usersKey, users);
 
-    write(usersKey, users);
-    write(sessionKey, {
-      email: enteredEmail
-    });
+          write(sessionKey, {
+              email: user.email
+          });
 
-    showApp();
-    toast('Your little garden is ready!');
+          await showApp();
+
+          toast('Your little garden is ready!');
+
+      } catch (error) {
+          console.error(error);
+          toast(error.message || 'Unable to create account.', true);
+      }
   };
-
+  
   // LOG OUT
 
   $('logout').onclick = () => {
